@@ -1,0 +1,150 @@
+Sub emailssenden()
+
+    check = MsgBox("Sicher?", vbYesNoCancel, "Sicher?")
+    
+        If check = vbYes Then
+        'if yes, then the program keeps going
+        
+        ElseIf check = vbNo Then
+           Exit Sub
+
+        ElseIf check = vbCancel Then
+          Exit Sub
+        End If
+                   
+    'declare variables after the check
+    
+    Dim Outlook As Object
+    Dim Email As Object
+    Dim Attachments As Object
+    'Dim AttachmentFile As Object
+    
+    'connect excel with outlook
+    Set Outlook = CreateObject("Outlook.application")
+    
+    'define starting point
+    row = 2
+    Column = 1
+    
+    'start loop
+    ActiveSheet.Cells(row, Column).Select
+    
+    Do Until IsEmpty(ActiveCell)
+        AttachmentFile = Application.ActiveWorkbook.Path & "\" & "email.oft" 'choose the template file
+
+        'check if file exists
+        If Dir(AttachmentFile) <> "" Then
+            Set Email = Outlook.CreateItemFromTemplate(AttachmentFile)
+        Else
+            MsgBox ("Fehler, email Datei fehlt")
+            Exit Sub
+        End If
+        
+        'prepare attachment variable
+        Set Attachments = Email.Attachments
+        
+        Do Until IsEmpty(ActiveSheet.Cells(row, Column))
+        
+            If ActiveSheet.Cells(row, Column).Value = "" Then
+                Exit Sub
+            End If
+                
+            'add recipient
+            If ActiveSheet.Cells(1, Column).Value = "Email" And Not IsEmpty(ActiveCell) Then
+                Email.To = Email.To & "; " & ActiveSheet.Cells(row, Column).Value
+                    
+                'add in copy
+            ElseIf ActiveSheet.Cells(1, Column).Value = "cc" And Not IsEmpty(ActiveCell) Then
+                If ActiveCell.Value = "leer" Then
+                    'if emtpy, then the program keeps going
+                Else
+                    Email.cc = Email.cc & "; " & ActiveSheet.Cells(row, Column).Value
+                End If
+                    
+                'add attachment 1
+                
+            ElseIf ActiveSheet.Cells(1, Column).Value = "Anhang" And Not IsEmpty(ActiveCell) Then
+                'look for and select the attachment
+                attachmentName = ActiveSheet.Cells(row, Column).Value
+                AttachmentFile = Application.ActiveWorkbook.Path & "\" & attachmentName
+                    
+                If FileExists(AttachmentFile) Then
+                        Attachments.Add Application.ActiveWorkbook.Path & "\" & ActiveSheet.Cells(row, Column).Value
+                Else
+                    If ActiveCell.Value = "leer" Then
+                        'program keeps going
+                    Else
+                        a = MsgBox("Anhang1 nicht gefunden, dennoch fortfahren?", vbYesNoCancel, "Sicher?")
+                        If a = vbYes Then
+                            'program keeps going
+                        ElseIf a = vbNo Then
+                            Exit Sub
+                        ElseIf a = vbCancel Then
+                            Exit Sub
+                        End If
+                    End If
+                End If
+                    
+            'add attachment 2
+                
+            ElseIf ActiveSheet.Cells(1, Column).Value = "Anhang2" And Not IsEmpty(ActiveCell) Then
+                attachmentName = ActiveSheet.Cells(row, Column).Value
+                AttachmentFile = Application.ActiveWorkbook.Path & "\" & attachmentName
+                If FileExists(AttachmentFile) Then
+                    Attachments.Add Application.ActiveWorkbook.Path & "\" & ActiveSheet.Cells(row, Column).Value
+                ElseIf ActiveCell.Value = "leer" Then
+                Else
+                    b = MsgBox("Anhang2 nicht gefunden, dennoch fortfahren?", vbYesNoCancel, "Sicher?")
+                        If b = vbYes Then
+                        ElseIf b = vbNo Then
+                            Exit Sub
+                        ElseIf b = vbCancel Then
+                            Exit Sub
+                        End If
+                End If
+
+            'add attachment 3
+                    
+            ElseIf ActiveSheet.Cells(1, Column).Value = "Anhang3" And Not IsEmpty(ActiveCell) Then
+                attachmentName = ActiveSheet.Cells(row, Column).Value
+                AttachmentFile = Application.ActiveWorkbook.Path & "\" & attachmentName
+                If FileExists(AttachmentFile) Then
+                    Attachments.Add Application.ActiveWorkbook.Path & "\" & ActiveSheet.Cells(row, Column).Value
+                ElseIf ActiveCell.Value = "leer" Then
+                    
+                Else
+                    c = MsgBox("Anhang3 nicht gefunden, dennoch fortfahren?", vbYesNoCancel, "Sicher?")
+                    If c = vbYes Then
+                    ElseIf c = vbNo Then
+                        Exit Sub
+                    ElseIf c = vbCancel Then
+                        Exit Sub
+                    End If
+                End If
+                          
+            'if no other condition matches, change the content of the mail
+            Else
+                Email.HTMLBody = Replace(Email.HTMLBody, ActiveSheet.Cells(1, Column).Value, ActiveSheet.Cells(row, Column).Value)
+            End If
+         
+            'change to next columnumn but same row
+            Column = Column + 1
+            ActiveSheet.Cells(row, Column).Select
+            
+        Loop
+        Email.HTMLBody = Replace(Email.HTMLBody, "xxxNLxxx", "<br>")
+        
+        'send email
+        Email.send
+        'reset position to first columnumn, and the next row
+        Column = 1
+        row = row + 1
+        ActiveSheet.Cells(row, Column).Select
+        
+    Loop
+
+End Sub
+
+Public Function FileExists(ByVal path_ As String) As Boolean
+    FileExists = (Len(Dir(path_)) > 0)
+End Function
